@@ -1,0 +1,1 @@
+g++ 3d.cpp -o 3d -lgdi32
