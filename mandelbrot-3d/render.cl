@@ -258,6 +258,10 @@ K allociter(G iter *a,G int *tar,G iter *b){
 	const int id=get_global_id(0);
 	if(a[id].sta>0)b[tar[id]-1]=a[id];
 }
+K resetstatus(G octree *s){
+	octree *p=&s[get_global_id(0)];
+	if(p->lz==128)p->w=INT_MIN;
+}
 K splitcheck(G octree *s){
 	int id=get_global_id(0);
 	octree *pi=&s[id];

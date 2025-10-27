@@ -68,7 +68,7 @@ int px,py,sx,sy,sz;
 window w0;
 source s0;
 kernel init,iframe,trace,sum0,sum1,inode,anode,ipos,snode,
-		iiter,aiter,split,emu,render,copy;
+		iiter,aiter,resta,split,emu,render,copy;
 memory node,nsum,ilist[2],isum,pix,cam,pj,bmp;
 int nc,nb,ns,ic,ib[2],sc;//node count,node sum count,iter count,iter sum count
 camera ca;
@@ -89,6 +89,7 @@ void initcl(){
 	snode.Load(s0,"setnodestatus");
 	iiter.Load(s0,"inititerlist");
 	aiter.Load(s0,"allociter");
+	resta.Load(s0,"resetstatus");
 	split.Load(s0,"splitcheck");
 	emu.Load(s0,"emu");
 	render.Load(s0,"render");
@@ -101,6 +102,7 @@ void setnode(){
 	ipos.Setptr(0,node);
 	snode.Setptr(0,node);
 	iiter.Setptr(0,node);
+	resta.Setptr(0,node);
 	split.Setptr(0,node);
 }
 void setnlist(){
@@ -133,6 +135,8 @@ void initargs(){
 	setiter();
 }
 void reset(){
+	nc=1;
+	ic=0;
 	init.Setptr(0,node);
 	init.call1(0,1);
 }
@@ -143,8 +147,8 @@ void initdata(){
 	for(int j=0;j<4;++j)fscanf(fi,"%lf",&pr.a[i][j]);
 	fclose(fi);
 	ca.p=(pos){1,-1,-1};
-	nc=nb=ns=1;
-	ic=ib[0]=ib[1]=sc=0;
+	nb=ns=1;
+	ib[0]=ib[1]=sc=0;
 	node.Buffout(sizeof(octree));
 	nsum.Buffout(sizeof(int));
 	pix.Buffout(sizeof(pixel)*sx*sy);
@@ -179,11 +183,10 @@ void start(bool w=0){
 	cam.Buffwrite(&ca);
 	iframe.call2(0,0,sx,sy,w);
 }
-void play(int step,bool run,bool wa=0,bool w=0){
+void play(int step,bool wa=0,bool w=0){
 	if(wa)puts("\nEmu:");
-	int ti=clock(),cc=0,cd;
+	int ti=clock(),cc,cd;
 	trace.call1(0,sx*sy,w);
-	if(!run)goto tag0;
 	split.call1(0,nc,w);
 	if(nc>ns){
 		nsum.Clear();
@@ -211,9 +214,7 @@ void play(int step,bool run,bool wa=0,bool w=0){
 		isum.Buffout(sc*sizeof(int));
 		setiter();
 	}
-	tag0:
 	iiter.call1(0,ic,w);
-	if(!run)goto tag1;
 	presum(isum,ic,w);
 	cd=ic?isum.Readint(ic-1):0;//running iter count
 	if(cc+cd>ib[1]){
@@ -233,10 +234,31 @@ void play(int step,bool run,bool wa=0,bool w=0){
 	ipos.Setint(2,cd-nc);
 	ipos.call1(nc,cc,w);
 	snode.call1(0,nc,w);
-	tag1:
 	emu.Setint(0,step);
 	emu.call1(0,ic,w);
 	nc+=cc;
+	if(wa)printf("Emu Total:%dms\n\n",clock()-ti);
+}
+void play0(int step,bool wa=0,bool w=0){
+	if(wa)puts("\nRender:");
+	int ti=clock(),cc=0,cd;
+	trace.call1(0,sx*sy,w);
+	iiter.call1(0,ic,w);
+	presum(isum,ic,w);
+	cd=ic?isum.Readint(ic-1):0;//running iter count
+	if(cc+cd>ib[1]){
+		if(ib[1])ilist[1].Clear();
+		for(ib[1]=1;ib[1]<cc+cd;ib[1]<<=1);
+		ilist[1].Buffout(ib[1]*sizeof(iter));
+		setiter();
+	}
+	aiter.call1(0,ic,w);
+	ic=cc+cd;
+	swap(ib[0],ib[1]);
+	swap(ilist[0],ilist[1]);
+	setiter();
+	emu.Setint(0,step);
+	emu.call1(0,ic,w);
 	if(wa)printf("Emu Total:%dms\n\n",clock()-ti);
 }
 void paste(bool w=0){
@@ -250,7 +272,10 @@ void click(int id,int x,int y,bool right){
 
 }
 void keys(int id,u64 wp){
-	if(wp==VK_SPACE)crt=!crt;
+	if(wp==VK_SPACE){
+		crt=!crt;
+		if(crt)resta.call1(0,nc,1);
+	}
 }
 
 int main(){
@@ -289,7 +314,8 @@ int main(){
 				SetCursorPos(dx,dy);
 				start(1);
 			}
-			play(256,crt,1,1);
+			if(crt)play(256,1);
+			else play0(256,1);
 			printf("node count=%d, buf=%d\n",nc,nb);
 			printf("iter queue=%d, buf=%d+%d\n\n",ic,ib[0],ib[1]);
 			paste(1);
