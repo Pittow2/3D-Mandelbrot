@@ -268,6 +268,7 @@ void paste(bool w=0){
 }
 
 bool crt=1;
+real speed=1;
 void click(int id,int x,int y,bool right){
 
 }
@@ -276,6 +277,8 @@ void keys(int id,u64 wp){
 		crt=!crt;
 		if(crt)resta.call1(0,nc,1);
 	}
+	if(wp=='c'||wp=='C')speed*=2;
+	if(wp=='v'||wp=='V')speed/=2;
 }
 
 int main(){
@@ -299,6 +302,8 @@ int main(){
 			pos a={0,0,0};
 			bool flag=0;
 			if(Press(VK_SHIFT))add*=8;
+			if(Press(VK_CONTROL))add/=8;
+			add*=speed;
 			if(Press('W'))a.a[2]+=add;
 			if(Press('S'))a.a[2]-=add;
 			if(Press('D'))a.a[0]+=add;
