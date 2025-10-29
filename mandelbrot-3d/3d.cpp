@@ -183,7 +183,15 @@ void start(bool w=0){
 	cam.Buffwrite(&ca);
 	iframe.call2(0,0,sx,sy,w);
 }
-void play(int step,bool wa=0,bool w=0){
+int gstep(int sum,int mi,int mx){
+	if(!ic)return 0;
+	int c=sum/ic;
+	if(c>mx)c=mx;
+	if(c<mi)c=mi;
+	return c;
+}
+int sum,mi,mx;
+void play(bool wa=0,bool w=0){
 	if(wa)puts("\nEmu:");
 	int ti=clock(),cc,cd;
 	trace.call1(0,sx*sy,w);
@@ -234,12 +242,12 @@ void play(int step,bool wa=0,bool w=0){
 	ipos.Setint(2,cd-nc);
 	ipos.call1(nc,cc,w);
 	snode.call1(0,nc,w);
-	emu.Setint(0,step);
+	emu.Setint(0,gstep(sum,mi,mx));
 	emu.call1(0,ic,w);
 	nc+=cc;
 	if(wa)printf("Emu Total:%dms\n\n",clock()-ti);
 }
-void play0(int step,bool wa=0,bool w=0){
+void play0(bool wa=0,bool w=0){
 	if(wa)puts("\nRender:");
 	int ti=clock(),cc=0,cd;
 	trace.call1(0,sx*sy,w);
@@ -257,7 +265,7 @@ void play0(int step,bool wa=0,bool w=0){
 	swap(ib[0],ib[1]);
 	swap(ilist[0],ilist[1]);
 	setiter();
-	emu.Setint(0,step);
+	emu.Setint(0,gstep(sum,mi,mx));
 	emu.call1(0,ic,w);
 	if(wa)printf("Emu Total:%dms\n\n",clock()-ti);
 }
@@ -285,6 +293,9 @@ int main(){
 	initcl();
 	px=100;py=64;
 	sx=1024;sy=768;sz=1000;
+	sum=1<<26;
+	mi=1;
+	mx=4096;
 	w0.InitialGDI(px,py,sx,sy,"3D Mandelbrot");
 	initdata();
 	initargs();
@@ -319,8 +330,8 @@ int main(){
 				SetCursorPos(dx,dy);
 				start(1);
 			}
-			if(crt)play(256,1);
-			else play0(256,1);
+			if(crt)play(1);
+			else play0(1);
 			printf("node count=%d, buf=%d\n",nc,nb);
 			printf("iter queue=%d, buf=%d+%d\n\n",ic,ib[0],ib[1]);
 			paste(1);

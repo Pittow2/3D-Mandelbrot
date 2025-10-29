@@ -319,18 +319,21 @@ K emu(int step,G iter *d){
 K render(G camera *c,G pixel *w,G byte *t){
 	const int id=get_global_id(0);
 	if(w[id].ans==-1){
-		real d=0;
+		real d=0,rate=75;
 		for(int i=0;i<3;++i){
 			real ca=w[id].p.a[i]-c->p.a[i];
 			d+=ca*ca;
 		}
-		t[id*3]=64+60*sin(sqrt(d)*10);
-		t[id*3+1]=t[id*3+2]=t[id*3];
+		d=log(d)*7;
+		t[id*3]=rate*(sin(d+6.28*2/3)+1);
+		t[id*3+1]=rate*(sin(d+6.28/3)+1);
+		t[id*3+2]=rate*(sin(d)+1);
 	}
 	else{
-		t[id*3]=128+120*sin(w[id].ans/16.0);
-		t[id*3+1]=128+120*sin(w[id].ans/16.0+6.28/3);
-		t[id*3+2]=128+120*sin(w[id].ans/16.0+6.28*2/3);
+		real d=w[id].ans/16.0,rate=128;
+		t[id*3]=rate*(sin(d)+1);
+		t[id*3+1]=rate*(sin(d+6.28/3)+1);
+		t[id*3+2]=rate*(sin(d+6.28*2/3)+1);
 	}
 }
 K copy(G octree *a,G octree *b){
